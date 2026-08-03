@@ -171,6 +171,7 @@
     <div class="bar">
       <h1>🐢 Packs</h1>
       <div style="display: flex; gap: 0.6em">
+        <button id="refresh-button" type="button" class="bar-button">🔄 Refresh</button>
         <button id="change-packs-button" type="button" class="bar-button">Change packs folder</button>
         <button id="linked-device-button" type="button" class="bar-button">Linked device</button>
       </div>
@@ -249,8 +250,14 @@
       }
 
       const loading_overlay = document.getElementById("loading-overlay");
+      const refresh_button = document.getElementById("refresh-button");
       const change_packs_button = document.getElementById("change-packs-button");
       const linked_device_button = document.getElementById("linked-device-button");
+
+      // Reuses the same reload path the Editor's refresh button relies on, which re-runs this page's own get_packs bootstrap.
+      refresh_button.addEventListener("click", () => {
+        location.reload();
+      });
 
       change_packs_button.addEventListener("click", () => {
         notify("open_first_run");

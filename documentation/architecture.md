@@ -36,7 +36,7 @@ The linked-device gate is skippable — the page offers to continue unlinked. Pu
 
 - `first_run.html` — choose the packs directory.
 - `linked_device.html` — link or unlink a signal-cli device.
-- `pack_selection.html` — list packs, open one.
+- `pack_selection.html` — list packs, open one, refresh from disk.
 - `editor.html` — edit, convert, and publish one pack.
 - `trophy.html` — report a trophy conversion outcome.
 
