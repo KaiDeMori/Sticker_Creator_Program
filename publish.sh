@@ -44,9 +44,10 @@ for platform in "${platforms[@]}"; do
 done
 
 echo "== Packaging win (zip, store/no compression) =="
+mv "$publish_root/win" "$publish_root/$executable_name"
 (
-  cd "$publish_root/win"
-  zip -0 -r -q "../${executable_name}_win.zip" .
+  cd "$publish_root"
+  zip -0 -r -q "${executable_name}.zip" "$executable_name"
 )
 
 echo "== Packaging linux (tar, uncompressed, forced executable bit) =="
@@ -57,9 +58,7 @@ echo "== Packaging linux (tar, uncompressed, forced executable bit) =="
 )
 
 echo "== Removing staging directories =="
-for platform in "${platforms[@]}"; do
-  rm -rf "$publish_root/$platform"
-done
+rm -rf "$publish_root/$executable_name" "$publish_root/linux"
 
 echo "== Done =="
-ls -lh "$publish_root/${executable_name}_win.zip" "$publish_root/${executable_name}_linux.tar"
+ls -lh "$publish_root/${executable_name}.zip" "$publish_root/${executable_name}_linux.tar"
