@@ -16,7 +16,7 @@ platforms=(win linux)
 rid_for_win="win-x64"
 rid_for_linux="linux-x64"
 
-for tool in dotnet tar zip; do
+for tool in dotnet tar zip gzip; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "publish.sh: required tool '$tool' not found on PATH." >&2
     exit 1
@@ -43,22 +43,24 @@ for platform in "${platforms[@]}"; do
   cp -r "$signal_cli_install_directory" "$publish_root/$platform/signal-cli"
 done
 
-echo "== Packaging win (zip, store/no compression) =="
+echo "== Packaging win (zip, compression level 7) =="
 mv "$publish_root/win" "$publish_root/$executable_name"
 (
   cd "$publish_root"
-  zip -0 -r -q "${executable_name}.zip" "$executable_name"
+  zip -7 -r -q "${executable_name}.zip" "$executable_name"
 )
+rm -rf "$publish_root/$executable_name"
 
-echo "== Packaging linux (tar, uncompressed, forced executable bit) =="
+echo "== Packaging linux (tar.gz, gzip level 7, forced executable bit) =="
 (
-  cd "$publish_root/linux"
-  tar --mode='+x' -cf "../${executable_name}_linux.tar" "$executable_name"
-  tar --mode='a+rX,u+w' -rf "../${executable_name}_linux.tar" --exclude="$executable_name" .
+  cd "$publish_root"
+  tar --transform "s,^linux,${executable_name}," --mode='+x' -cf "${executable_name}_linux.tar" "linux/$executable_name"
+  tar --transform "s,^linux,${executable_name}," --mode='a+rX,u+w' -rf "${executable_name}_linux.tar" --exclude="linux/$executable_name" "linux"
+  gzip -7 "${executable_name}_linux.tar"
 )
 
 echo "== Removing staging directories =="
-rm -rf "$publish_root/$executable_name" "$publish_root/linux"
+rm -rf "$publish_root/linux"
 
 echo "== Done =="
-ls -lh "$publish_root/${executable_name}.zip" "$publish_root/${executable_name}_linux.tar"
+ls -lh "$publish_root/${executable_name}.zip" "$publish_root/${executable_name}_linux.tar.gz"
