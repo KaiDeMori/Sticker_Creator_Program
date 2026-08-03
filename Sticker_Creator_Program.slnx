@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Sticker_Creator_Program/Sticker_Creator_Program.csproj" />
+  <Project Path="Sticker_Creator_Program_Tests/Sticker_Creator_Program_Tests.csproj" />
+</Solution>

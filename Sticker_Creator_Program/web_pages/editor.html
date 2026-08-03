@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sticker Creator Program — Editor</title>
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <div class="bar">
+      <div class="bar-rows">
+        <div class="bar-row">
+          <h1>🐢 Editor</h1>
+          <button id="btn-back">← All packs</button>
+          <label>title <input class="title" id="meta-title" autocorrect="off" /></label>
+          <label>author <input class="author" id="meta-author" autocorrect="off" /></label>
+          <span class="stat" id="stat"></span>
+          <span class="stat" id="cover-label"></span>
+          <button id="btn-cover">🎯 Set cover</button>
+        </div>
+        <div class="bar-row">
+          <button id="btn-convert">⚙️ Convert</button>
+          <label id="lossless-toggle" title="Also try a pixel-perfect lossless encode first — much slower, and rarely necessary at this size."><input type="checkbox" id="chk-lossless" /> enable lossless</label>
+          <button id="btn-refresh">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="top-right-panel">
+        <div class="bar-row">
+          <button id="btn-install" style="display: none">🔗 Install pack</button>
+          <button id="btn-validity"></button>
+        </div>
+        <div class="bar-row">
+          <button id="btn-export" class="primary">View stickers.yaml</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="loading-text" id="loading-text">Loading…</div>
+      <div class="progress-label" id="progress-label" style="display: none"></div>
+      <div class="progress-track" id="progress-track" style="display: none"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <dialog class="picker" id="picker">
+      <div class="picker-head">
+        <input id="search" placeholder="search emoji — e.g. wink, turtle, box…" autocomplete="off" autocorrect="off" />
+        <label class="zoom-control" title="Emoji size">
+          🔍
+          <input type="range" id="zoom" min="1" max="4" step="0.1" value="1" />
+          <span class="zoom-value" id="zoom-value">1.0×</span>
+        </label>
+        <button id="picker-close">✕</button>
+      </div>
+      <div class="picker-body" id="picker-body"></div>
+    </dialog>
+
+    <dialog class="export" id="export">
+      <h3 style="margin: 0.4em 0.6em">stickers.yaml</h3>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">Every edit already autosaves — this is a read-only view of what's currently on disk.</p>
+      <textarea id="export-text" readonly autocorrect="off" style="margin: 0 0.6em"></textarea>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em">
+        <button id="export-copy" class="primary">Copy</button>
+        <button id="export-close">Close</button>
+      </div>
+    </dialog>
+
+    <dialog id="lossless-warning" style="border: 1px solid #bbb; border-radius: 0.6em; width: min(480px, 92vw)">
+      <h3 style="margin: 0.4em 0.6em">Lossless compression</h3>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">
+        Lossless is attempted first for every sticker before falling back to the lossy quality steps — this makes conversion take much longer to complete.
+      </p>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="lossless-warning-ok" class="primary">Got it</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="remove-confirm" style="width: min(420px, 92vw)">
+      <h3 style="margin: 0.4em 0.6em">Remove sticker?</h3>
+      <p id="remove-confirm-text" style="color: var(--muted); margin: 0.2em 0.6em 0.6em"></p>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="remove-confirm-cancel">Cancel</button>
+        <button id="remove-confirm-ok" class="primary">Remove</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="validity-dialog" style="width: min(520px, 92vw)">
+      <h3 style="margin: 0.4em 0.6em">Pack validity</h3>
+      <ul id="validity-list" style="margin: 0.2em 0.6em 0.6em"></ul>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="validity-close">Close</button>
+        <button id="btn-publish" class="primary" disabled>🚀 Publish</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="publish-confirm" style="width: min(440px, 92vw)">
+      <h3 style="margin: 0.4em 0.6em">Publish this pack?</h3>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">Uploading is permanent — a Signal sticker pack can't be edited, unpublished, or deleted afterward. This cannot be undone.</p>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="publish-confirm-cancel">Cancel</button>
+        <button id="publish-confirm-ok" class="primary">Publish</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="publish-result" style="width: min(480px, 92vw)">
+      <h3 style="margin: 0.4em 0.6em">Publish failed</h3>
+      <p id="publish-result-text" style="color: var(--muted); margin: 0.2em 0.6em 0.6em; overflow-wrap: anywhere"></p>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="publish-result-close" class="primary">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="install-pack">
+      <h3 style="margin: 0.4em 0.6em">Install this pack</h3>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">
+        Paste the link into a Signal chat to install it from there, scan the QR code with a phone's camera, or open the link directly.
+      </p>
+      <input id="install-pack-url" readonly autocorrect="off" style="margin: 0 0.6em; width: calc(100% - 1.2em)" />
+      <div id="install-pack-qr-frame">
+        <img id="install-pack-qr" alt="QR code for the pack's signal.art link" />
+      </div>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="install-pack-copy">Copy link</button>
+        <button id="install-pack-open">Open link</button>
+        <button id="install-pack-note-to-self">Send to Note to Self</button>
+        <button id="install-pack-close" class="primary">Close</button>
+      </div>
+    </dialog>
+
+    <script src="message_bridge.js"></script>
+    <script src="assets/emoji_catalog/apple_emoji.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>

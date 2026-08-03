@@ -1,0 +1,17 @@
+# .NET build output
+bin/
+obj/
+
+# publish.sh output
+_publish/
+
+# signal-cli install, obtained per machine from the upstream release asset
+signal-cli/
+
+.vs/
+.idea/
+*.user
+
+.vscode/
+
+.github/

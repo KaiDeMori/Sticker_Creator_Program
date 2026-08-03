@@ -1,0 +1,441 @@
+:root {
+  --line: #ddd;
+  --muted: #666;
+  --accent: #2e6fdb;
+  --card: #fafafa;
+  --drop: #cfe3ff;
+  --danger: #c0392b;
+  --warn: #d98324;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #fff;
+  color: #1a1a1a;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  padding: 0.7em 1.2em;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1em;
+}
+.bar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  flex: 1;
+  min-width: 0;
+}
+.bar-row {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.top-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  align-items: flex-end;
+}
+.bar h1 {
+  font-size: 1.05em;
+  margin: 0 1em 0 0;
+}
+.bar label {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+.bar input,
+.bar select {
+  font: inherit;
+  padding: 0.3em 0.45em;
+  border: 1px solid #bbb;
+  border-radius: 0.35em;
+}
+.bar input.title {
+  width: 11em;
+}
+.bar input.author {
+  width: 9em;
+}
+.stat {
+  font-size: 0.85em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+button {
+  font: inherit;
+  padding: 0.45em 0.9em;
+  border: 1px solid #bbb;
+  border-radius: 0.4em;
+  background: #f2f2f2;
+  cursor: pointer;
+}
+button:hover {
+  background: #e8e8e8;
+}
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+button:disabled {
+  cursor: not-allowed;
+}
+#btn-convert.blocked,
+#btn-validity.blocked {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+.card {
+  border: 1px solid var(--line);
+  border-radius: 0.7em;
+  background: var(--card);
+  padding: 10px;
+  position: relative;
+  cursor: grab;
+  transition: box-shadow 0.1s;
+}
+.card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.card.dragging {
+  opacity: 0.4;
+}
+.card.over {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+  background: var(--drop);
+}
+.card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  display: block;
+  border-radius: 0.4em;
+  background: #fff;
+}
+.card .fname {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72em;
+  color: var(--muted);
+  margin-top: 6px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.emoji-slot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border-radius: 0.5em;
+  background: #fff;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.emoji-slot:hover {
+  border-color: var(--accent);
+}
+.emoji-slot .empty {
+  color: #bbb;
+  font-size: 1.4em;
+}
+.glyph {
+  background-repeat: no-repeat;
+  display: inline-block;
+}
+
+.thumb {
+  position: relative;
+}
+.cover-badge {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  z-index: 2;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68em;
+  font-weight: 700;
+  padding: 0.15em 0.5em;
+  border-radius: 0.4em;
+  letter-spacing: 0.03em;
+}
+.cover-badge.default {
+  background: #ececec;
+  color: var(--muted);
+  font-weight: 600;
+}
+.quality-badge {
+  position: absolute;
+  left: 1%;
+  bottom: 1px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 0.68em;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 0.4em;
+  letter-spacing: 0.03em;
+}
+.not-converted-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.68em;
+  font-weight: 700;
+  padding: 0.15em 0.5em;
+  border-radius: 0.4em;
+  letter-spacing: 0.03em;
+}
+.card.not-square {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.35);
+}
+.square-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(192, 57, 43, 0.72);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px;
+  border-radius: 0.4em;
+}
+/* A non-square source's mapping is preserved but not editable: the emoji chip stays readable above the overlay so the user sees their mapping is safe, while being dimmed and click-through to lock edits until the source is squared and reconverted. */
+.card.not-square .emoji-slot {
+  z-index: 6;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.card.missing-source {
+  border-color: var(--warn);
+  box-shadow: 0 0 0 2px rgba(217, 131, 36, 0.35);
+}
+.square-overlay.missing-source {
+  background: rgba(217, 131, 36, 0.72);
+  flex-direction: column;
+  gap: 8px;
+}
+/* Unlike not-square, a missing/unreadable source doesn't lock emoji editing — only raised above the overlay, not dimmed or click-through. */
+.card.missing-source .emoji-slot {
+  z-index: 6;
+}
+.remove-sticker-btn {
+  font-size: 0.78em;
+  padding: 0.3em 0.7em;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 0.4em;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  cursor: pointer;
+}
+.remove-sticker-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.cover-mode .remove-sticker-btn {
+  pointer-events: none;
+  opacity: 0.45;
+}
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 1em;
+}
+.progress-label {
+  font-family: ui-monospace, monospace;
+  white-space: pre;
+  font-size: 0.95em;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+.progress-track {
+  width: min(320px, 70vw);
+  height: 10px;
+  border-radius: 999px;
+  background: #e4e4e4;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.15s ease-out;
+}
+.cover-hint {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(46, 111, 219, 0.8);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 0.4em;
+  z-index: 4;
+}
+.cover-mode .card {
+  cursor: pointer;
+}
+.cover-mode .card:hover .cover-hint {
+  display: flex;
+}
+.cover-mode .emoji-slot {
+  pointer-events: none;
+  opacity: 0.45;
+}
+#btn-cover.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+dialog.picker {
+  border: 1px solid #bbb;
+  border-radius: 0.7em;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+dialog.picker::backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+.picker-head {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.picker-head > input {
+  flex: 1;
+  font: inherit;
+  padding: 0.5em 0.6em;
+  border: 1px solid #bbb;
+  border-radius: 0.4em;
+}
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.85em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.zoom-control input[type="range"] {
+  width: 6em;
+}
+.zoom-control .zoom-value {
+  font-variant-numeric: tabular-nums;
+  width: 2.4em;
+}
+.picker-body {
+  overflow-y: auto;
+  height: calc(100% - 58px);
+  padding: 8px 12px 16px;
+}
+.cat-head {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 12px 4px 6px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+.emoji-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.pick {
+  border: 0;
+  background: none;
+  padding: 3px;
+  border-radius: 0.35em;
+  cursor: pointer;
+  line-height: 0;
+}
+.pick:hover {
+  background: #eef3ff;
+}
+
+dialog.export {
+  border: 1px solid #bbb;
+  border-radius: 0.6em;
+  width: min(560px, 92vw);
+}
+dialog.export textarea {
+  width: 100%;
+  height: 20em;
+  font-family: ui-monospace, monospace;
+  font-size: 0.82em;
+}
+dialog#install-pack {
+  width: min(90vw, 90vh);
+  height: min(90vw, 90vh);
+}
+dialog#install-pack[open] {
+  display: flex;
+  flex-direction: column;
+}
+#install-pack-qr-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+#install-pack-qr {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

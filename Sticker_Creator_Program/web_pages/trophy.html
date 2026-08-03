@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sticker Creator Program — Maximum Entropy Achieved</title>
+    <style>
+      :root {
+        --ink: #211c10;
+        --muted: #7a6f56;
+        --gold: #b8860b;
+        --gold-soft: #e7c76a;
+        --line: #e7dcc2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        font-family: system-ui, sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 50% 22%, #fff7e2 0%, rgba(255, 247, 226, 0) 55%), #fffdf7;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .card {
+        width: 100%;
+        max-width: 640px;
+        text-align: center;
+      }
+      .trophy {
+        width: min(300px, 66vw);
+        height: auto;
+        margin: 0 auto 10px;
+        display: block;
+        filter: drop-shadow(0 10px 26px rgba(184, 134, 11, 0.35));
+      }
+      .kicker {
+        font-size: 0.8em;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.5em;
+      }
+      .headline {
+        font-size: 2.1em;
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0 0 1em;
+      }
+      .headline .file-name {
+        display: block;
+        margin: 0.3em;
+        font-family: ui-monospace, monospace;
+        font-size: 1.2em;
+        font-weight: 700;
+        color: var(--gold);
+        word-break: break-all;
+        animation: file-name-glow 4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+      }
+      @keyframes file-name-glow {
+        0%,
+        100% {
+          text-shadow: 0 0 14px rgba(255, 225, 0, 0);
+        }
+        50% {
+          text-shadow:
+            0 0 20px rgb(255, 225, 0, 1);
+        }
+      }
+      .body {
+        font-size: 1.05em;
+        line-height: 1.6;
+        max-width: 34em;
+        margin: 0 auto 1.4em;
+      }
+      .body b {
+        color: var(--gold);
+      }
+      .score {
+        display: inline-block;
+        border: 2px solid var(--gold-soft);
+        background: #fff8e6;
+        color: var(--ink);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.02em;
+        padding: 0.55em 1.1em;
+        border-radius: 0.6em;
+        margin-bottom: 1.6em;
+      }
+      .score .label {
+        display: block;
+        font-size: 0.62em;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 0.25em;
+      }
+      .score .content {
+         font-size: 1.4em;
+      }
+      .cta {
+        border: 1px solid var(--line);
+        background: #fffefb;
+        border-radius: 0.7em;
+        padding: 1.1em 1.2em;
+        max-width: 34em;
+        margin: 0 auto 1.6em;
+        line-height: 1.55;
+      }
+      .cta .handle {
+        display: block;
+        width: fit-content;
+        margin: 0.6em auto 0;
+        font-family: ui-monospace, monospace;
+        font-size: 2em;
+        color: var(--ink);
+        border: 1px dashed var(--line);
+        border-radius: 0.4em;
+        padding: 0.35em 0.7em;
+      }
+      button {
+        font: inherit;
+        padding: 0.5em 1em;
+        border: 1px solid #cbb88a;
+        border-radius: 0.45em;
+        background: #f6edd6;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      button:hover {
+        background: #efe3c4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <img class="trophy" src="assets/Trophy_fractal.avif" alt="Trophy" />
+      <div class="kicker">Maximum-entropy achievement unlocked</div>
+      <h1 class="headline">
+        Your image<span class="file-name">“<span id="file-name">my_masterpiece.png</span>”</span>broke the compressor
+      </h1>
+      <p class="body">
+        While trying to wedge it under Signal's 300&nbsp;KiB ceiling, we discovered that your image compresses about as well as a <b><a href="https://en.wikipedia.org/wiki/A_Fistful_of_Dollars">fistful of static</a></b>. An image this close to the <b><a href="https://en.wikipedia.org/wiki/Bekenstein_bound">Bekenstein Bound</a></b> is dangerous! A <em>bit</em> more entropy and we'd have to frame it in its own <b><a href="https://en.wikipedia.org/wiki/Event_horizon">event horizon</a></b>.
+      </p>
+      <div class="score" id="score">
+        <span class="label">Anti-Compression Score</span>
+        <span class="content">Quality <span id="quality">60</span> · <span id="size">298.8</span> KiB</span>
+      </div>
+      <div class="cta">
+        This is not luck. Landing here takes real intent, a genuinely cursed source image, or a minor breach of thermodynamics. The author would like to meet whoever — or whatever — pulled it off. <br /><strong>Reach out on Signal to claim your prize.</strong>
+        <span class="handle" id="handle">MYSIGNALID.1234</span>
+      </div>
+      <button id="btn-back">← Back to your pack</button>
+    </div>
+
+    <script src="message_bridge.js"></script>
+    <script>
+      function render(trophy) {
+        if (trophy == null) return;
+        document.getElementById("file-name").textContent = trophy.file;
+        document.getElementById("quality").textContent = trophy.quality;
+        document.getElementById("size").textContent = (trophy.byte_size / 1024).toFixed(1);
+      }
+
+      document.getElementById("btn-back").addEventListener("click", () => notify("close_trophy"));
+
+      // Plain in-window navigation would load these Wikipedia links inside the Photino WebView itself; routing the click through the bridge instead lets C# hand the URL to the OS shell, which opens it in the user's actual default browser.
+      document.addEventListener("click", (event) => {
+        const anchor = event.target.closest("a[href]");
+        if (!anchor) return;
+        const href = anchor.getAttribute("href");
+        if (!href || href.startsWith("#")) return;
+        event.preventDefault();
+        notify("open_external_url", href);
+      });
+
+      // Standalone preview has no bridge; the empty catch leaves the markup's placeholder values in place.
+      send("get_trophy")
+        .then((message) => render(message.payload))
+        .catch(() => {});
+    </script>
+  </body>
+</html>

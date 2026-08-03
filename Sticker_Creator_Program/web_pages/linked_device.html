@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sticker Creator Program — Linked device</title>
+    <style>
+      :root {
+        --line: #ddd;
+        --muted: #666;
+        --accent: #2e6fdb;
+        --card: #fafafa;
+        --blocked-bg: #fdecea;
+        --blocked-line: #f5c2c0;
+        --blocked-text: #9b1c17;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        background: #fff;
+        color: #1a1a1a;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        padding: 0.7em 1.2em;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1em;
+      }
+      .bar h1 {
+        font-size: 1.05em;
+        margin: 0 1em 0 0;
+      }
+      .bar-button {
+        font: inherit;
+        padding: 0.35em 0.9em;
+        border: 1px solid var(--line);
+        border-radius: 0.4em;
+        background: var(--card);
+        cursor: pointer;
+      }
+      .bar-button:hover {
+        border-color: var(--accent);
+      }
+      .content {
+        max-width: 640px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 2.4em 1.6em 3em;
+      }
+      p {
+        line-height: 1.5;
+        margin: 0 0 1em;
+      }
+      .field {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7em;
+        align-items: center;
+        margin-bottom: 1em;
+      }
+      input[type="text"] {
+        font: inherit;
+        padding: 0.5em 0.7em;
+        border: 1px solid var(--line);
+        border-radius: 0.4em;
+        flex: 1 1 16em;
+      }
+      input:invalid {
+        outline: 4px solid var(--blocked-line);
+      }
+      .field label {
+        min-width: 9em;
+      }
+      button {
+        font: inherit;
+        padding: 0.5em 1.1em;
+        border: 1px solid var(--line);
+        border-radius: 0.4em;
+        background: var(--card);
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: default;
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      button.primary:hover {
+        background: #2560c0;
+      }
+      .error {
+        border: 1px solid var(--blocked-line);
+        background: var(--blocked-bg);
+        color: var(--blocked-text);
+        border-radius: 0.5em;
+        padding: 1em 1.1em;
+        margin-bottom: 1em;
+      }
+      .qr-section {
+        text-align: center;
+      }
+      .qr-section img {
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        border: 1px solid var(--line);
+        border-radius: 0.5em;
+        padding: 0.8em;
+        background: #fff;
+      }
+      /* While the QR code is on screen, the page gives it the most space the window allows instead of a fixed size. */
+      body.qr-mode {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      body.qr-mode .content {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-width: none;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      body.qr-mode #register-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      body.qr-mode #register-intro,
+      body.qr-mode #register-footer {
+        display: none;
+      }
+      body.qr-mode #qr-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.8em;
+      }
+      body.qr-mode #qr-section img {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: auto;
+        max-width: 100%;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <h1>🔗 Linked device</h1>
+      <button id="back-button" type="button" class="bar-button">← All packs</button>
+    </div>
+    <div class="content">
+      <div id="manage-section" hidden>
+        <p>Signal account <strong id="linked-phone-number"></strong> is linked.</p>
+
+        <p>
+          To remove this device, open Signal on your phone:
+          <strong>Settings → Linked Devices</strong>, <span id="unlink-target"></span>, and unlink it
+          there — this app cannot do that step for you.
+        </p>
+
+        <div id="manage-error" class="error" hidden></div>
+
+        <p class="muted">
+          Deleting local data clears this app's own signal-cli state. It does not touch your Signal
+          account, your messages, or the phone-side link — do that first, above.
+        </p>
+        <button id="delete-local-data-button" type="button">Delete local data</button>
+      </div>
+
+      <div id="register-section">
+        <p id="register-intro">
+          Enter the phone number of the Signal account you want to publish sticker packs from, and a
+          name for this device — that name is what Signal lists under <strong>Linked Devices</strong>
+          on your phone. Then scan the QR code with the Signal app on that account's phone.
+        </p>
+
+        <div id="link-error" class="error" hidden></div>
+
+        <div id="link-form">
+          <div class="field">
+            <label for="phone-input">Phone number</label>
+            <input
+              type="text"
+              id="phone-input"
+              placeholder="+491701234567"
+              pattern="^\+[1-9]\d{6,14}$"
+              title="Phone number in international format, e.g. +491701234567 (leading +, no leading zero, 7-15 digits)"
+              autocorrect="off"
+              disabled
+            />
+          </div>
+          <div class="field">
+            <label for="device-name-input">Device name</label>
+            <input type="text" id="device-name-input" autocorrect="off" disabled />
+          </div>
+          <button id="link-button" type="button" class="primary" disabled>Link device</button>
+        </div>
+
+        <div id="qr-section" class="qr-section" hidden>
+          <img id="qr-image" alt="Signal linking QR code" />
+          <p>
+            In Signal on your phone: <strong>Settings → Linked Devices → Link New Device</strong>,
+            then scan this code.
+          </p>
+          <button id="cancel-button" type="button">Cancel</button>
+        </div>
+
+        <div id="register-footer">
+          <p class="muted">
+            Testing something and don't want to link an account yet? You can continue without one —
+            publishing a pack will still require linking later.
+          </p>
+          <button id="continue-without-account-button" type="button">Continue without account</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="message_bridge.js"></script>
+    <script>
+      const manage_section = document.getElementById("manage-section");
+      const linked_phone_number = document.getElementById("linked-phone-number");
+      const unlink_target = document.getElementById("unlink-target");
+      const manage_error = document.getElementById("manage-error");
+      const delete_local_data_button = document.getElementById("delete-local-data-button");
+      const register_section = document.getElementById("register-section");
+      const link_error = document.getElementById("link-error");
+      const link_form = document.getElementById("link-form");
+      const phone_input = document.getElementById("phone-input");
+      const device_name_input = document.getElementById("device-name-input");
+      const link_button = document.getElementById("link-button");
+      const qr_section = document.getElementById("qr-section");
+      const qr_image = document.getElementById("qr-image");
+      const cancel_button = document.getElementById("cancel-button");
+      const continue_without_account_button = document.getElementById("continue-without-account-button");
+      const back_button = document.getElementById("back-button");
+
+      back_button.addEventListener("click", () => {
+        notify("open_pack_selection");
+      });
+
+      function set_busy(busy) {
+        phone_input.disabled = busy;
+        device_name_input.disabled = busy;
+        link_button.disabled = busy;
+      }
+
+      function show_link_input_state() {
+        qr_section.hidden = true;
+        link_form.hidden = false;
+        qr_image.src = "";
+        document.body.classList.remove("qr-mode");
+        set_busy(false);
+      }
+
+      function show_error(message) {
+        link_error.textContent = message;
+        link_error.hidden = false;
+        show_link_input_state();
+      }
+
+      function start_link() {
+        if (!phone_input.reportValidity()) {
+          return;
+        }
+        link_error.hidden = true;
+        set_busy(true);
+        notify("start_link", {
+          phone_number: phone_input.value.trim(),
+          device_name: device_name_input.value.trim(),
+        });
+      }
+
+      link_button.addEventListener("click", start_link);
+      cancel_button.addEventListener("click", () => {
+        notify("cancel_link");
+        show_link_input_state();
+      });
+
+      continue_without_account_button.addEventListener("click", () => {
+        notify("open_pack_selection");
+      });
+
+      delete_local_data_button.addEventListener("click", () => {
+        manage_error.hidden = true;
+        delete_local_data_button.disabled = true;
+        send("unlink_local_data")
+          .then(() => {
+            location.reload();
+          })
+          .catch((error) => {
+            manage_error.textContent = error.message;
+            manage_error.hidden = false;
+            delete_local_data_button.disabled = false;
+          });
+      });
+
+      on("link_qr", (message) => {
+        qr_image.src = message.payload.qr_data_url;
+        link_form.hidden = true;
+        qr_section.hidden = false;
+        document.body.classList.add("qr-mode");
+      });
+
+      on("link_result", (message) => {
+        if (message.payload.ok) {
+          notify("open_pack_selection");
+        } else {
+          show_error(message.payload.error);
+        }
+      });
+
+      send("linked_device_ready")
+        .then((message) => {
+          if (message.payload.linked) {
+            linked_phone_number.textContent = message.payload.phone_number || "(phone number unavailable)";
+            unlink_target.textContent = message.payload.device_name
+              ? `find "${message.payload.device_name}"`
+              : "find the device you linked from this app";
+            manage_section.hidden = false;
+            register_section.hidden = true;
+          } else {
+            device_name_input.value = message.payload.default_device_name;
+            set_busy(false);
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    </script>
+  </body>
+</html>

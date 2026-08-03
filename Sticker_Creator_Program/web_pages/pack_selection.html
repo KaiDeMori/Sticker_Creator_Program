@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sticker Creator Program — Packs</title>
+    <style>
+      :root {
+        --line: #ddd;
+        --muted: #666;
+        --accent: #2e6fdb;
+        --card: #fafafa;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        background: #fff;
+        color: #1a1a1a;
+      }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        padding: 0.7em 1.2em;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1em;
+      }
+      .bar h1 {
+        font-size: 1.05em;
+        margin: 0;
+      }
+      .bar-button {
+        font: inherit;
+        padding: 0.35em 0.9em;
+        border: 1px solid var(--line);
+        border-radius: 0.4em;
+        background: var(--card);
+        cursor: pointer;
+      }
+      .bar-button:hover {
+        border-color: var(--accent);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+        padding: 18px;
+      }
+      .card {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 0.7em;
+        background: var(--card);
+        padding: 12px;
+        cursor: pointer;
+      }
+      .card:hover {
+        border-color: var(--accent);
+      }
+      .card .title {
+        font-weight: 600;
+        margin-bottom: 8px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card img,
+      .card .no-cover {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 0.4em;
+        background: #fff;
+      }
+      .card img {
+        object-fit: contain;
+        display: block;
+      }
+      .card .no-cover {
+        background: #f2f2f2;
+        color: var(--muted);
+        font-size: 0.8em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .thumb {
+        position: relative;
+      }
+      .folder-button {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        z-index: 3;
+        border: 1px solid var(--line);
+        border-radius: 0.4em;
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--muted);
+        font-size: 0.9em;
+        line-height: 1;
+        padding: 0.3em 0.4em;
+        cursor: pointer;
+      }
+      .folder-button:hover {
+        background: #fff;
+        border-color: var(--accent);
+      }
+      .cover-badge {
+        position: absolute;
+        left: 6px;
+        bottom: 6px;
+        z-index: 2;
+        background: #ececec;
+        color: var(--muted);
+        font-size: 0.68em;
+        font-weight: 600;
+        padding: 0.15em 0.5em;
+        border-radius: 0.4em;
+        letter-spacing: 0.03em;
+      }
+      .card .author {
+        font-size: 0.82em;
+        color: var(--muted);
+        margin-top: 8px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card .stats {
+        font-size: 0.72em;
+        color: var(--muted);
+        margin-top: 4px;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card .published {
+        font-size: 0.72em;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 4px;
+        text-align: center;
+      }
+      .empty {
+        padding: 2em;
+        color: var(--muted);
+      }
+      .loading-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <h1>🐢 Packs</h1>
+      <div style="display: flex; gap: 0.6em">
+        <button id="change-packs-button" type="button" class="bar-button">Change packs folder</button>
+        <button id="linked-device-button" type="button" class="bar-button">Linked device</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="loading-overlay" id="loading-overlay">Loading…</div>
+
+    <script src="message_bridge.js"></script>
+    <script>
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      }
+      /**
+       * The button lives inside the card, whose own click opens the pack — stop the click here so opening the folder doesn't also navigate into the Editor.
+       *
+       * The bridge allows one call in flight at a time (see message_bridge.js); a collision with a ping or another folder click lands here.
+       * Signal busy rather than letting the handler throw.
+       */
+      function openPackFolder(event, packName, button) {
+        event.stopPropagation();
+        const original_label = button.textContent;
+        const flagFailure = (error) => {
+          console.error(error);
+          button.textContent = "⚠";
+          setTimeout(() => {
+            button.textContent = original_label;
+          }, 1500);
+        };
+        try {
+          send("open_pack_folder", packName)
+            .then((message) => {
+              if (!message.payload.ok) throw new Error("open-folder reported failure");
+            })
+            .catch(flagFailure);
+        } catch (error) {
+          flagFailure(error);
+        }
+      }
+
+      const grid = document.getElementById("grid");
+      function render(packs) {
+        if (!packs.length) {
+          grid.innerHTML = '<p class="empty">No packs found.</p>';
+          return;
+        }
+        grid.innerHTML = "";
+        packs.forEach((pack) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          const thumb = pack.cover_url
+            ? `<img src="${pack.cover_url}" alt="">` + (pack.cover ? "" : `<span class="cover-badge">★ cover · first</span>`)
+            : `<div class="no-cover">${pack.has_webp ? "no Cover defined" : "no WebP files"}</div>`;
+          const image = `<div class="thumb">${thumb}<button type="button" class="folder-button" title="Open pack folder" aria-label="Open pack folder">📂</button></div>`;
+          const stats = `${pack.original_count} original · ${pack.converted_count} converted · ${pack.mapped_count} mapped`;
+          const published = pack.art_url ? `<div class="published">🔗 Published</div>` : "";
+          card.innerHTML = `<div class="title">${escapeHtml(pack.title)}</div>${image}<div class="author">${escapeHtml(pack.author)}</div><div class="stats">${stats}</div>${published}`;
+          card.addEventListener("click", () => {
+            notify("open_pack", pack.name);
+          });
+          const folderButton = card.querySelector(".folder-button");
+          folderButton.addEventListener("click", (event) => openPackFolder(event, pack.name, folderButton));
+          grid.appendChild(card);
+        });
+      }
+
+      function waitForImages(container) {
+        return Promise.all(
+          [...container.querySelectorAll("img")].map((image) => {
+            if (image.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              image.addEventListener("load", resolve, { once: true });
+              image.addEventListener("error", resolve, { once: true });
+            });
+          })
+        );
+      }
+
+      const loading_overlay = document.getElementById("loading-overlay");
+      const change_packs_button = document.getElementById("change-packs-button");
+      const linked_device_button = document.getElementById("linked-device-button");
+
+      change_packs_button.addEventListener("click", () => {
+        notify("open_first_run");
+      });
+
+      linked_device_button.addEventListener("click", () => {
+        notify("open_linked_device_page");
+      });
+
+      send("get_packs")
+        .then((message) => {
+          render(message.payload.packs);
+          return waitForImages(grid);
+        })
+        .then(() => {
+          loading_overlay.style.display = "none";
+        })
+        .catch((error) => {
+          loading_overlay.textContent = "C# error — see console (F12)";
+          console.error(error);
+        });
+    </script>
+  </body>
+</html>
