@@ -36,7 +36,7 @@ All commands run from the workspace root. The shell scripts require Git Bash.
   ./download_signal_cli.sh
   ```
 
-`publish.sh` produces self-contained, single-file `win-x64` and `linux-x64` packages with signal-cli copied alongside each. It needs `dotnet`, `tar`, and `zip` on `PATH`, and an existing signal-cli install to copy.
+`publish.sh` produces self-contained, single-file `win-x64` and `linux-x64` packages with signal-cli copied alongside each: `Sticker_Creator_Program.zip` and `Sticker_Creator_Program_linux.tar.gz`, both compressed at level 7 and each containing a top-level `Sticker_Creator_Program/` folder. It needs `dotnet`, `tar`, `zip`, and `gzip` on `PATH`, and an existing signal-cli install to copy.
 
 `download_signal_cli.sh` also fetches the man pages' AsciiDoc sources into `signal-cli/man/adoc/`. Those are the reference for signal-cli's command-line options, D-Bus interface, and JSON-RPC behavior; the extracted `man/` holds only pre-built, gzipped pages.
 
