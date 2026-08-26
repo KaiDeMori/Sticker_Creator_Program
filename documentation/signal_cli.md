@@ -85,6 +85,7 @@ Written to `pack_info/manifest.json`. The file name must be exactly `manifest.js
 - `file` is relative to the manifest's own directory, never absolute. signal-cli resolves it against the manifest's location.
 - The cover sticker appears in both `cover` and `stickers`. It is one of the pack's stickers, not an extra image.
 - The manifest is regenerated on every publish attempt and never read back.
+- `emoji` is a free string in the manifest and in the sticker protobuf. Neither signal-cli nor the Signal server restricts or truncates it.
 
 ### Upload
 

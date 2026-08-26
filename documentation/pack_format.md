@@ -56,6 +56,12 @@ Emoji are stored as literal characters, so the file stays hand-editable. The YAM
 
 Exception: when any stored value contains a literal backslash, the document is left as emitted. Both forms parse back to the same string.
 
+### One emoji per sticker
+
+- `emoji` holds exactly one emoji, of exactly one codepoint.
+- Stickers may share an emoji. There is no uniqueness requirement.
+- Signal clients display the first codepoint only. A zero-width-joiner (ZWJ) sequence shows its base character alone.
+
 ### Reconciliation
 
 The sticker list is reconciled against the pack root on every load.
