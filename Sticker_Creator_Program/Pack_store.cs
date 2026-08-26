@@ -292,7 +292,7 @@ public static class Pack_store {
     var temp_path = Path.Combine(pack_info_directory, $"{conversion_info_file_name}.{Guid.NewGuid():N}.tmp");
 
     try {
-      File.WriteAllText(temp_path, JsonSerializer.Serialize(info));
+      File.WriteAllText(temp_path, JsonSerializer.Serialize(info, new JsonSerializerOptions { WriteIndented = true }));
 
       if (File.Exists(path)) {
         File.Replace(temp_path, path, null);
