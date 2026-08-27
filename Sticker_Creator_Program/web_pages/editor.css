@@ -217,6 +217,11 @@ button:disabled {
   border-radius: 0.4em;
   letter-spacing: 0.03em;
 }
+/* Paint order only: the grid places flagged cards first so broken sources are easy to find, while drag-and-drop indices, the saved sticker order, and the default-cover pick all keep reading the underlying array order, untouched by this. */
+.card.not-square,
+.card.missing-source {
+  order: -1;
+}
 .card.not-square {
   border-color: var(--danger);
   box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.35);
