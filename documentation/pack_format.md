@@ -17,7 +17,7 @@
         ├── stickers.yaml             title, author, cover, emoji mapping, sticker order
         ├── conversion_info.json      per-file conversion outcome
         ├── signal_art_url.txt        one signal.art URL per publish, oldest first
-        ├── manifest.json             upload manifest, regenerated on every publish attempt
+        ├── manifest.json             upload manifest, regenerated whenever a manifest is prepared
         └── _WebP/                    upload-ready 512 × 512 WebP output
             ├── turtle.webp
             └── wave.webp

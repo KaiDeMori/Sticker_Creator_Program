@@ -84,14 +84,21 @@ Written to `pack_info/manifest.json`. The file name must be exactly `manifest.js
 - `contentType` is always `image/webp`. The application produces static WebP only.
 - `file` is relative to the manifest's own directory, never absolute. signal-cli resolves it against the manifest's location.
 - The cover sticker appears in both `cover` and `stickers`. It is one of the pack's stickers, not an extra image.
-- The manifest is regenerated on every publish attempt and never read back.
 - `emoji` is a free string in the manifest and in the sticker protobuf. Neither signal-cli nor the Signal server restricts or truncates it.
 
-### Upload
+### Preparing and uploading are separate steps
 
-- Validity is recomputed in C# immediately before building the manifest. A non-empty error list aborts without a subprocess call.
-- `uploadStickerPack <manifest_path>` uploads the bytes as-is. It does not resize or convert.
-- The resulting URL is the first `https://signal.art/...` match in standard output, and is appended to the pack's URL file.
+Publishing is irreversible, so the manifest is built by its own operation before any subprocess runs. That operation is also reachable on its own, which is how the manifest is inspected without publishing.
+
+1. **Prepare.** The Editor flushes every pending edit to disk and waits for the acknowledgement. C# then reloads pack state from disk, recomputes validity, and builds the manifest. A non-empty error list aborts here, with no manifest written and no subprocess call. Otherwise the manifest is serialized once, written atomically, and returned to the Editor together with its SHA-256 fingerprint.
+2. **Confirm.** The Editor displays those exact bytes. Nothing has been uploaded at this point.
+3. **Upload.** `uploadStickerPack <manifest_path>` uploads the file as-is. It does not resize or convert.
+
+The upload never rebuilds the manifest. It re-checks validity, then re-fingerprints the file on disk and refuses to run if it no longer matches what was confirmed — the guard against a change made outside the application between confirmation and upload. Edits made inside the application cannot occur there, because both dialogs are modal.
+
+The resulting URL is the first `https://signal.art/...` match in standard output, and is appended to the pack's URL file.
+
+The application never reads a manifest back as pack state. The fingerprint check hashes the file's text; it does not parse it.
 - Publishing is irreversible. A published pack cannot be edited, replaced, or deleted.
 
 ## Note to Self

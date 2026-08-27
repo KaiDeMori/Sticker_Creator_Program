@@ -31,7 +31,8 @@ The user performs:
 
 ### Files you must not write
 
-- `conversion_info.json`, `manifest.json`, and `pack_info/_WebP/` are conversion output. The application rewrites them on every conversion pass.
+- `conversion_info.json` and `pack_info/_WebP/` are conversion output. The application rewrites them on every conversion pass.
+- `manifest.json` is upload output. The application rewrites it whenever a manifest is prepared, and refuses to upload one that changed after the user confirmed it — an edit here does not reach Signal, it only aborts the publish.
 - `signal_art_url.txt` is append-only publish history. A published Signal sticker pack cannot be deleted, edited, or replaced, so earlier URLs stay valid and must never be overwritten.
 
 ## Editing stickers.yaml

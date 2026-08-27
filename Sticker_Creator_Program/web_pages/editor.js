@@ -37,10 +37,34 @@ let meta = { title: "", author: "", cover: "" };
 let errorList = [];
 let activeCard = null;
 let saveChain = Promise.resolve();
+let lastSaveError = null;
 
+/**
+ * The returned promise settles once this save and every save queued before it has reached disk.
+ * It always fulfils, never rejects: a rejected link would poison the chain for the page's whole lifetime, silently dropping every later save. A failure is reported through lastSaveError instead, so the publish path can refuse to build a manifest from state that never landed.
+ */
 function queueSave() {
-  saveChain = saveChain.then(() => send("save_pack", { meta, stickers: state })).then(applyErrorListFromReply);
+  saveChain = saveChain
+    .then(() => send("save_pack", { meta, stickers: state }))
+    .then((message) => {
+      lastSaveError = null;
+      applyErrorListFromReply(message);
+    })
+    .catch((error) => {
+      lastSaveError = error;
+      console.error("save_pack failed:", error);
+    });
   return saveChain;
+}
+
+/**
+ * The one entry point to the publish path, for both the preview and the publish itself.
+ * Awaiting the save chain first is what makes a stale manifest impossible: the bridge allows one request in flight, so a manifest can only be built once every pending edit has been written and acknowledged.
+ */
+async function prepareManifest() {
+  await queueSave();
+  if (lastSaveError) throw lastSaveError;
+  return (await send("prepare_manifest")).payload;
 }
 
 /**
@@ -154,11 +178,13 @@ function updateConvertButton() {
 }
 
 const btnValidity = document.getElementById("btn-validity");
+// The manifest button is gated on validity alongside publish: Signal_manifest.build resolves the cover against the sticker list, which only an already-valid pack guarantees.
 function updateValidityIndicator() {
   const invalid = errorList.length > 0;
   btnValidity.textContent = invalid ? `⚠️ ${errorList.length} errors` : "✅ Valid";
   btnValidity.classList.toggle("blocked", invalid);
   btnPublish.disabled = invalid;
+  btnManifest.disabled = invalid;
 }
 
 // Any edit — mapping an emoji, changing the cover, removing a sticker, … — can change pack validity.
@@ -450,19 +476,82 @@ btnValidity.addEventListener("click", () => {
 });
 document.getElementById("validity-close").addEventListener("click", () => validityDlg.close());
 
+const btnManifest = document.getElementById("btn-manifest");
 const publishConfirmDlg = document.getElementById("publish-confirm");
+const publishSummary = document.getElementById("publish-summary");
+const publishManifestJson = document.getElementById("publish-manifest-json");
 const publishResultDlg = document.getElementById("publish-result");
+const publishResultTitle = document.getElementById("publish-result-title");
 const publishResultText = document.getElementById("publish-result-text");
+const manifestPreviewDlg = document.getElementById("manifest-preview");
+const manifestPreviewPath = document.getElementById("manifest-preview-path");
+const manifestPreviewJson = document.getElementById("manifest-preview-json");
 
-btnPublish.addEventListener("click", () => {
+// The fingerprint of the manifest the confirmation dialog last displayed. Sent with publish_pack so C# can refuse to upload anything else.
+let confirmedFingerprint = "";
+
+function showPublishError(title, text) {
+  publishResultTitle.textContent = title;
+  publishResultText.textContent = text;
+  publishResultDlg.showModal();
+}
+
+function describeManifest(prepared) {
+  return [
+    `title: ${prepared.meta.title}`,
+    `author: ${prepared.meta.author}`,
+    `cover: ${prepared.meta.cover}`,
+    `stickers: ${prepared.sticker_count}`,
+  ].join("\n");
+}
+
+/**
+ * Runs the shared prepare step behind the overlay and hands the written manifest to show_prepared.
+ * An invalid pack reopens the validity dialog with the freshly recomputed list rather than an error box, since that list is the actionable answer.
+ */
+async function withPreparedManifest(show_prepared) {
   validityDlg.close();
-  publishConfirmDlg.showModal();
-});
+  showOverlay("Building manifest…");
+  try {
+    const prepared = await prepareManifest();
+    if (!prepared.ok) {
+      errorList = prepared.error_list;
+      updateValidityIndicator();
+      renderValidityDialog();
+      validityDlg.showModal();
+      return;
+    }
+    show_prepared(prepared);
+  } catch (error) {
+    showPublishError("Could not build the manifest", String(error));
+  } finally {
+    hideOverlay();
+  }
+}
+
+btnPublish.addEventListener("click", () =>
+  withPreparedManifest((prepared) => {
+    confirmedFingerprint = prepared.fingerprint;
+    publishSummary.textContent = describeManifest(prepared);
+    publishManifestJson.value = prepared.manifest_json;
+    publishConfirmDlg.showModal();
+  })
+);
+
+btnManifest.addEventListener("click", () =>
+  withPreparedManifest((prepared) => {
+    manifestPreviewPath.textContent = prepared.manifest_path;
+    manifestPreviewJson.value = prepared.manifest_json;
+    manifestPreviewDlg.showModal();
+  })
+);
+document.getElementById("manifest-preview-close").addEventListener("click", () => manifestPreviewDlg.close());
+
 document.getElementById("publish-confirm-cancel").addEventListener("click", () => publishConfirmDlg.close());
 document.getElementById("publish-confirm-ok").addEventListener("click", () => {
   publishConfirmDlg.close();
   showOverlay("Publishing…");
-  notify("publish_pack");
+  notify("publish_pack", confirmedFingerprint);
 });
 document.getElementById("publish-result-close").addEventListener("click", () => publishResultDlg.close());
 // publish_pack is fired and forgotten — the C# handler streams back exactly one publish_result once the background upload finishes, same shape convert_pack already uses for convert_result.
@@ -474,8 +563,7 @@ on("publish_result", (message) => {
     btnInstall.style.display = "";
     openInstallDialog(artUrl);
   } else {
-    publishResultText.textContent = payload.error;
-    publishResultDlg.showModal();
+    showPublishError("Publish failed", payload.error);
   }
 });
 

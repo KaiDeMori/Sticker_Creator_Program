@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -56,16 +58,22 @@ public static class Signal_manifest {
   }
 
   /// <summary>
-  /// Atomically overwrites pack_info/manifest.json. Regenerated on every publish attempt, never read back by this app.
+  /// Kept separate from write so one set of bytes can be shown to the user, written, and fingerprinted, rather than serialized once per purpose.
   /// </summary>
-  public static void write(string pack_directory, Signal_manifest_document document) {
+  public static string serialize(Signal_manifest_document document) =>
+     JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true });
+
+  /// <summary>
+  /// Atomically overwrites pack_info/manifest.json with text the caller has already serialized.
+  /// </summary>
+  public static void write(string pack_directory, string manifest_json) {
     var pack_info_directory = Pack_store.pack_info_directory_path(pack_directory);
     Directory.CreateDirectory(pack_info_directory);
     var manifest_path = manifest_file_path(pack_directory);
     var temp_path = Path.Combine(pack_info_directory, $"{manifest_file_name}.{Guid.NewGuid():N}.tmp");
 
     try {
-      File.WriteAllText(temp_path, JsonSerializer.Serialize(document, new JsonSerializerOptions { WriteIndented = true }));
+      File.WriteAllText(temp_path, manifest_json);
 
       if (File.Exists(manifest_path)) {
         File.Replace(temp_path, manifest_path, null);
@@ -78,5 +86,20 @@ public static class Signal_manifest {
       File.Delete(temp_path);
       throw;
     }
+  }
+
+  /// <summary>
+  /// Identifies exactly which manifest the user was shown, so the upload can refuse to publish anything else.
+  /// Taken over the text rather than the file's raw bytes, so a difference in encoding preamble alone cannot read as a changed manifest.
+  /// </summary>
+  public static string fingerprint(string manifest_json) =>
+     Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(manifest_json))).ToLowerInvariant();
+
+  /// <summary>
+  /// The fingerprint of the manifest currently on disk, or null when the pack has none.
+  /// </summary>
+  public static string? fingerprint_on_disk(string pack_directory) {
+    var manifest_path = manifest_file_path(pack_directory);
+    return File.Exists(manifest_path) ? fingerprint(File.ReadAllText(manifest_path)) : null;
   }
 }

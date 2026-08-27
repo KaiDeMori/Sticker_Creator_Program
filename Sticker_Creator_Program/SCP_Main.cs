@@ -124,8 +124,11 @@ public static class SCP_Main {
                 case "convert_pack":
                   handle_convert_pack(window, require_packs_directory(), current_pack_name);
                   break;
+                case "prepare_manifest":
+                  handle_prepare_manifest(window, require_packs_directory(), current_pack_name);
+                  break;
                 case "publish_pack":
-                  handle_publish_pack(window, require_packs_directory(), current_pack_name, data_directory);
+                  handle_publish_pack(window, require_packs_directory(), current_pack_name, data_directory, request.payload);
                   break;
                 case "get_install_qr":
                   handle_get_install_qr(window, require_packs_directory(), current_pack_name);
@@ -495,12 +498,44 @@ public static class SCP_Main {
   }
 
   /// <summary>
+  /// Builds and writes the manifest without uploading it, so the exact bytes an upload would send can be shown before the irreversible step is confirmed.
   /// Re-checks validity server-side rather than trusting the Editor's last-loaded error_list, since the pack could have changed since — same reasoning handle_convert_pack applies to its own inputs.
+  /// Runs on the UI thread like handle_save_pack, which already does this same validation work there.
+  /// </summary>
+  private static void handle_prepare_manifest(PhotinoWindow window, string packs_directory, string? current_pack_name) {
+    var pack_name = current_pack_name ?? throw new InvalidOperationException("prepare_manifest received with no pack open.");
+    var pack_directory = Path.Combine(packs_directory, pack_name);
+
+    var state = Pack_store.load_pack_state(pack_directory);
+    var error_list = Pack_validator.compute_error_list(pack_directory, state);
+    if (error_list.Count > 0) {
+      send_message(window, "manifest_prepared", new { ok = false, error_list });
+      return;
+    }
+
+    var manifest_json = Signal_manifest.serialize(Signal_manifest.build(pack_directory, state.meta, state.stickers));
+    Signal_manifest.write(pack_directory, manifest_json);
+
+    send_message(window, "manifest_prepared", new {
+      ok = true,
+      manifest_json,
+      manifest_path = Signal_manifest.manifest_file_path(pack_directory),
+      fingerprint = Signal_manifest.fingerprint(manifest_json),
+      meta = state.meta,
+      sticker_count = state.stickers.Count,
+    });
+  }
+
+  /// <summary>
+  /// Uploads the manifest handle_prepare_manifest already wrote, rather than building a fresh one, so the upload can only ever send what the user was shown and confirmed.
+  /// A fingerprint mismatch means the file changed outside this application since that confirmation; publishing is irreversible, so it aborts rather than guessing which version was meant.
   /// The upload itself blocks on the signal-cli subprocess, so this runs off the UI thread like handle_convert_pack does.
   /// </summary>
-  private static void handle_publish_pack(PhotinoWindow window, string packs_directory, string? current_pack_name, string data_directory) {
+  private static void handle_publish_pack(PhotinoWindow window, string packs_directory, string? current_pack_name, string data_directory, JsonElement? payload) {
     var pack_name = current_pack_name ?? throw new InvalidOperationException("publish_pack received with no pack open.");
     var pack_directory = Path.Combine(packs_directory, pack_name);
+    var confirmed_fingerprint = payload?.GetString()
+              ?? throw new InvalidOperationException("publish_pack received without the confirmed manifest fingerprint.");
 
     Task.Run(() => {
       try {
@@ -511,8 +546,10 @@ public static class SCP_Main {
           return;
         }
 
-        var manifest = Signal_manifest.build(pack_directory, state.meta, state.stickers);
-        Signal_manifest.write(pack_directory, manifest);
+        if (Signal_manifest.fingerprint_on_disk(pack_directory) != confirmed_fingerprint) {
+          send_message(window, "publish_result", new { ok = false, error = "the manifest changed since it was confirmed — nothing was uploaded. Review it and publish again." });
+          return;
+        }
 
         var url = Signal_cli.upload_sticker_pack(Signal_manifest.manifest_file_path(pack_directory), data_directory);
         Pack_store.append_signal_art_url(pack_directory, url);

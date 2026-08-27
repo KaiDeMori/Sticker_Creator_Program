@@ -78,4 +78,4 @@ Behavior:
 - The application never holds Signal credentials. signal-cli owns the account lifecycle. The application never implements Signal's pack encryption or manifest protobuf.
 - signal-cli stores account state in unencrypted SQLite, protected only by file permissions. Unlinking is available from the phone independently of that directory's contents.
 - Every `file://` URL is built from a directory the application resolved and a file name it enumerated. No incoming URL is parsed back into a path.
-- Upload is the only irreversible action and requires an explicit confirmation.
+- Upload is the only irreversible action. Building the manifest is a separate step, so its exact bytes are shown before the confirmation and can be generated without uploading at all. The upload verifies that the manifest still matches what was confirmed.

@@ -88,13 +88,27 @@
       <ul id="validity-list" style="margin: 0.2em 0.6em 0.6em"></ul>
       <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
         <button id="validity-close">Close</button>
+        <button id="btn-manifest" disabled>📄 Manifest</button>
         <button id="btn-publish" class="primary" disabled>🚀 Publish</button>
       </div>
     </dialog>
 
-    <dialog class="export" id="publish-confirm" style="width: min(440px, 92vw)">
+    <dialog class="export" id="manifest-preview">
+      <h3 style="margin: 0.4em 0.6em">manifest.json</h3>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">This is what an upload would send. Writing it changes nothing on Signal — the pack is only published from the Publish button.</p>
+      <p id="manifest-preview-path" style="color: var(--muted); margin: 0.2em 0.6em 0.6em; font-family: ui-monospace, monospace; font-size: 0.78em; overflow-wrap: anywhere"></p>
+      <textarea id="manifest-preview-json" readonly autocorrect="off" style="margin: 0 0.6em"></textarea>
+      <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
+        <button id="manifest-preview-close" class="primary">Close</button>
+      </div>
+    </dialog>
+
+    <dialog class="export" id="publish-confirm">
       <h3 style="margin: 0.4em 0.6em">Publish this pack?</h3>
       <p style="color: var(--muted); margin: 0.2em 0.6em 0.6em">Uploading is permanent — a Signal sticker pack can't be edited, unpublished, or deleted afterward. This cannot be undone.</p>
+      <p style="color: var(--muted); margin: 0.2em 0.6em 0.4em">These are the exact bytes that will be uploaded:</p>
+      <pre id="publish-summary" style="margin: 0 0.6em 0.6em; font-family: ui-monospace, monospace; font-size: 0.82em; overflow-x: auto"></pre>
+      <textarea id="publish-manifest-json" readonly autocorrect="off" style="margin: 0 0.6em"></textarea>
       <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
         <button id="publish-confirm-cancel">Cancel</button>
         <button id="publish-confirm-ok" class="primary">Publish</button>
@@ -102,7 +116,7 @@
     </dialog>
 
     <dialog class="export" id="publish-result" style="width: min(480px, 92vw)">
-      <h3 style="margin: 0.4em 0.6em">Publish failed</h3>
+      <h3 id="publish-result-title" style="margin: 0.4em 0.6em">Publish failed</h3>
       <p id="publish-result-text" style="color: var(--muted); margin: 0.2em 0.6em 0.6em; overflow-wrap: anywhere"></p>
       <div style="margin: 0.7em 0.6em; display: flex; gap: 0.5em; justify-content: flex-end">
         <button id="publish-result-close" class="primary">Close</button>
