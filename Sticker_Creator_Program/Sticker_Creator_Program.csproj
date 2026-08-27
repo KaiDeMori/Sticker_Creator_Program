@@ -35,4 +35,18 @@
     </Content>
   </ItemGroup>
 
+  <!--
+    Mirrors the workspace-root signal-cli install next to every build output, including
+    runtime-identifier-qualified ones (bin/.../win-x64/), so the application can be run
+    directly from bin/ without going through publish.sh. publish.sh is unaffected: it
+    publishes to its own -o directory and copies signal-cli there itself, never reading
+    from bin/.
+  -->
+  <Target Name="Copy_signal_cli_for_direct_run" AfterTargets="Build" Condition="Exists('$(MSBuildProjectDirectory)\..\signal-cli')">
+    <ItemGroup>
+      <Signal_cli_source_files Include="$(MSBuildProjectDirectory)\..\signal-cli\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(Signal_cli_source_files)" DestinationFolder="$(TargetDir)signal-cli\%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>
